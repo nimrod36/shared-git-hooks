@@ -1,0 +1,39 @@
+#!/bin/bash
+# Node.js Pre-Push Hook
+
+echo "🚀 Running pre-push checks..."
+
+# Skip if SKIP_HOOKS is set
+if [ -n "$SKIP_HOOKS" ]; then
+  echo "⏭️  Skipping hooks (SKIP_HOOKS is set)"
+  exit 0
+fi
+
+# Check if npm is available
+if ! command -v npm &> /dev/null; then
+  echo "⚠️  npm not found. Skipping Node.js checks."
+  exit 0
+fi
+
+# Run full test suite including BDD
+if [ -f "package.json" ]; then
+  echo "🧪 Running full test suite..."
+  
+  # Try BDD tests first, fallback to regular test
+  if npm run 2>&1 | grep -q "test:bdd"; then
+    npm run test:bdd
+  elif npm run 2>&1 | grep -q " test$"; then
+    npm test
+  else
+    echo "⚠️  No test script found in package.json"
+    exit 0
+  fi
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Fix them or use SKIP_HOOKS=1 git push."
+    exit 1
+  fi
+fi
+
+echo "✅ Pre-push checks passed!"
+exit 0

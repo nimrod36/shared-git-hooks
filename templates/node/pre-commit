@@ -1,0 +1,58 @@
+#!/bin/bash
+# Node.js Pre-Commit Hook
+
+echo "🔍 Running pre-commit checks..."
+
+# Skip if SKIP_HOOKS is set
+if [ -n "$SKIP_HOOKS" ]; then
+  echo "⏭️  Skipping hooks (SKIP_HOOKS is set)"
+  exit 0
+fi
+
+# Check if npm is available
+if ! command -v npm &> /dev/null; then
+  echo "⚠️  npm not found. Skipping Node.js checks."
+  exit 0
+fi
+
+# Run linter on staged files if configured
+if [ -f "package.json" ] && npm run 2>&1 | grep -q "lint"; then
+  STAGED_JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx)$' || true)
+  
+  if [ -n "$STAGED_JS_FILES" ]; then
+    echo "🔎 Running linter on staged files..."
+    # Try to lint specific files, fallback to full lint
+    npm run lint -- $STAGED_JS_FILES 2>/dev/null || npm run lint
+    
+    if [ $? -ne 0 ]; then
+      echo "❌ Linting failed. Fix issues or use 'git commit --no-verify'."
+      exit 1
+    fi
+  fi
+else
+  echo "ℹ️  No lint script found in package.json"
+fi
+
+# Run quick tests if available (prefer test:unit, fallback to test)
+if npm run 2>&1 | grep -q "test:unit"; then
+  echo "🧪 Running unit tests..."
+  npm run test:unit
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Fix them or use SKIP_HOOKS=1."
+    exit 1
+  fi
+elif npm run 2>&1 | grep -q " test$"; then
+  echo "🧪 Running tests..."
+  npm test
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Fix them or use SKIP_HOOKS=1."
+    exit 1
+  fi
+else
+  echo "ℹ️  No test script found in package.json"
+fi
+
+echo "✅ Pre-commit checks passed!"
+exit 0

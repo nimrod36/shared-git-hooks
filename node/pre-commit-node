@@ -1,0 +1,45 @@
+#!/bin/bash
+# Node.js Pre-Commit Hook
+
+echo "🔍 Running pre-commit checks..."
+
+# Skip if SKIP_HOOKS is set
+if [ -n "$SKIP_HOOKS" ]; then
+  echo "⏭️  Skipping hooks (SKIP_HOOKS is set)"
+  exit 0
+fi
+
+# Check if npm is available
+if ! command -v npm &> /dev/null; then
+  echo "⚠️  npm not found. Skipping Node.js checks."
+  exit 0
+fi
+
+# Run ESLint on staged files if available
+if [ -f "package.json" ] && grep -q "eslint" package.json; then
+  STAGED_JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.(js|jsx)$' || true)
+  
+  if [ -n "$STAGED_JS_FILES" ]; then
+    echo "🔎 Running ESLint on staged files..."
+    npm run lint -- $STAGED_JS_FILES
+    
+    if [ $? -ne 0 ]; then
+      echo "❌ ESLint found issues. Fix them or use 'git commit --no-verify'."
+      exit 1
+    fi
+  fi
+fi
+
+# Run quick unit tests if test:unit script exists
+if grep -q '"test:unit"' package.json; then
+  echo "🧪 Running unit tests..."
+  npm run test:unit
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Unit tests failed. Fix them or use SKIP_HOOKS=1."
+    exit 1
+  fi
+fi
+
+echo "✅ Pre-commit checks passed!"
+exit 0

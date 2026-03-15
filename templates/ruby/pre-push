@@ -1,0 +1,52 @@
+#!/bin/bash
+# Ruby Pre-Push Hook
+
+echo "🚀 Running pre-push checks..."
+
+# Skip if SKIP_HOOKS is set
+if [ -n "$SKIP_HOOKS" ]; then
+  echo "⏭️  Skipping hooks (SKIP_HOOKS is set)"
+  exit 0
+fi
+
+# Check if bundle is available
+if ! command -v bundle &> /dev/null; then
+  echo "⚠️  Bundle not found. Skipping Ruby checks."
+  exit 0
+fi
+
+# Run full BDD test suite if specs/ exists
+if [ -d "specs" ] && [ -n "$(ls -A specs 2>/dev/null)" ]; then
+  echo "🥒 Running Cucumber BDD tests (specs/)..."
+  
+  # Use cucumber profile if available
+  if [ -f "cucumber.yml" ]; then
+    bundle exec cucumber specs --profile default
+  else
+    bundle exec cucumber specs --tags "not @wip"
+  fi
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ BDD tests failed. Fix them or use SKIP_HOOKS=1 git push."
+    exit 1
+  fi
+elif [ -d "features" ] && [ -n "$(ls -A features 2>/dev/null)" ]; then
+  echo "🥒 Running Cucumber BDD tests (features/)..."
+  
+  # Use cucumber profile if available
+  if [ -f "cucumber.yml" ]; then
+    bundle exec cucumber features --profile default
+  else
+    bundle exec cucumber features --tags "not @wip"
+  fi
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ BDD tests failed. Fix them or use SKIP_HOOKS=1 git push."
+    exit 1
+  fi
+else
+  echo "ℹ️  No BDD tests found (no specs/ or features/ directory)"
+fi
+
+echo "✅ Pre-push checks passed!"
+exit 0
