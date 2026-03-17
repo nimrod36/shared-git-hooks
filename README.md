@@ -13,6 +13,36 @@ Reusable git hooks for Ruby and Node.js projects with automatic quality enforcem
 
 ## Installation
 
+### Auto-Detection (Recommended)
+
+The installer automatically detects your project type:
+- **Ruby**: Looks for `Gemfile`
+- **Node.js**: Looks for `package.json`
+
+```bash
+# In your project directory (e.g., cajiva/, monday-band/)
+../shared-git-hooks/install.sh
+```
+
+If no project files are found, you'll be prompted to select a template interactively.
+
+### Manual Template Selection
+
+Force a specific template by passing it as an argument:
+
+```bash
+# Install Ruby hooks explicitly
+../shared-git-hooks/install.sh ruby
+
+# Install Node.js hooks explicitly
+../shared-git-hooks/install.sh node
+```
+
+This is useful when:
+- You have both `Gemfile` and `package.json` (monorepo)
+- Auto-detection picks the wrong template
+- Setting up a new project before creating configuration files
+
 ### Option 1: Install from Parent Directory
 
 If `shared-git-hooks` is adjacent to your project:
@@ -30,6 +60,9 @@ git clone https://github.com/YOUR_USERNAME/shared-git-hooks.git ~/shared-git-hoo
 
 # Then in any project:
 ~/shared-git-hooks/install.sh
+
+# Or specify template:
+~/shared-git-hooks/install.sh ruby
 ```
 
 ### Option 3: Add as Git Submodule
